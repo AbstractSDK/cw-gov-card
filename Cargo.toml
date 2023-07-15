@@ -1,12 +1,12 @@
 [workspace]
 members = ["contracts/*"]
 
+resolver = "2"
 
 [workspace.package]
 version = "0.0.1"
 
 # members = ["packages/*", "contracts/*"]
-resolver = "2"
 edition = "2021"
 homepage = ""
 documentation = ""
@@ -33,6 +33,6 @@ serde = { version = "1.0.167", default-features = false, features = ["derive"] }
 cw-orch = { version = "0.13" }
 cw-multi-test = { version = "0.16.5" }
 
-#[patch.crates-io]
-## Update deps to ~0.13.1 after when its released
-#cw-orch = { git = "https://github.com/AbstractSDK/cw-orchestrator", branch = "feature/add-mock-querier" }
+[patch.crates-io]
+# Update deps to ~0.13.1 after when its released
+cw-orch = { git = "https://github.com/AbstractSDK/cw-orchestrator" }

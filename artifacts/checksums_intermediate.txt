@@ -1,0 +1,2 @@
+49ed73bdfdac931e9faaf74442ef3ae5a36793b5abf243b01903532b267f69d8  ./target/wasm32-unknown-unknown/release/abstract_giftcard_issuer.wasm
+33f7a4d976b909b99a4e0ac746ce785e7cf6b89aead689e2e96976b79f66173e  ./target/wasm32-unknown-unknown/release/cw_giftcard.wasm

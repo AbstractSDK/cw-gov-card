@@ -13,31 +13,58 @@ use abstract_core::ans_host::ExecuteMsgFns as AnsExecMsgFns;
 use abstract_dex_adapter::interface::DexAdapter;
 use abstract_testing::prelude::{TEST_ACCOUNT_ID, TEST_NAMESPACE};
 // Use prelude to get all the necessary imports
-use cw_orch::{anyhow, deploy::Deploy, prelude::*};
+use cw_orch::{anyhow, deploy::Deploy, interface, prelude::*};
 use speculoos::prelude::*;
+
+use abstract_dex_adapter::msg::ExecuteMsg as FullDexExecuteMsg;
+use abstract_dex_adapter::msg::InstantiateMsg as FullDexInstantiateMsg;
+use abstract_dex_adapter::msg::QueryMsg as FullDexQueryMsg;
 
 use cosmwasm_std::{Addr, coins, Decimal};
 use cw_asset::AssetInfoUnchecked;
+use cw_orch::osmosis_test_tube::osmosis_test_tube::Account;
 use cw_giftcard::CwGiftcard;
 
 // consts for testing
 const ADMIN: &str = "admin";
 
-const ISSUE_ASSET: &str = "juno>juno";
+const ISSUE_ASSET: &str = "osmo>osmo";
+const ISSUE_DENOM: &'static str = "uosmo";
+
+#[interface(FullDexInstantiateMsg, FullDexExecuteMsg, FullDexQueryMsg, Empty)]
+pub struct HackDexAdapter<Chain>;
+
+// Implement deployer trait
+impl<Chain: CwEnv> AdapterDeployer<Chain, DexInstantiateMsg> for HackDexAdapter<Chain> {}
+
+impl<Chain: CwEnv> Uploadable for HackDexAdapter<Chain> {
+    fn wrapper(&self) -> <Mock as TxHandler>::ContractSource {
+        Box::new(ContractWrapper::new_with_empty(
+            abstract_dex_adapter::contract::execute,
+            abstract_dex_adapter::contract::instantiate,
+            abstract_dex_adapter::contract::query,
+        ))
+    }
+    fn wasm(&self) -> WasmPath {
+        artifacts_dir_from_workspace!()
+            .find_wasm_path("abstract_dex_adapter")
+            .unwrap()
+    }
+}
+
 
 /// Set up the test environment with the contract installed
-fn setup() -> anyhow::Result<(AbstractAccount<Mock>, Abstract<Mock>, GiftcardIssuer<Mock>, CwGiftcard<Mock>)> {
-    // Create a sender
-    let sender = Addr::unchecked(ADMIN);
-    // Create the mock
-    let mock = Mock::new(&sender);
+fn setup() -> anyhow::Result<(AbstractAccount<OsmosisTestTube>, Abstract<OsmosisTestTube>, GiftcardIssuer<OsmosisTestTube>, CwGiftcard<OsmosisTestTube>)> {
+    // Download the adapter wasm
+    // Create the OsmosisTestTube
+    let test_tube = OsmosisTestTube::new(coins(1_000_000_000_000, ISSUE_DENOM));
 
-    let abstr = setup_abstract(&mock);
-    let dex_adapter = setup_dex_adapter(&mock);
-    let giftcard_issuer = setup_giftcard_issuer(&mock);
-    let giftcard = setup_giftcard(&mock);
+    let abstr = setup_abstract(&test_tube);
+    let dex_adapter = setup_dex_adapter(&test_tube);
+    let giftcard_issuer = setup_giftcard_issuer(&test_tube);
+    let giftcard = setup_giftcard(&test_tube);
 
-    let account = setup_new_account(&abstr, TEST_NAMESPACE);
+    let account = setup_new_account(&abstr, TEST_NAMESPACE)?;
     setup_default_assets(&abstr);
     install_modules_on_account(&abstr, &account, &giftcard_issuer, giftcard.clone())?;
 
@@ -45,16 +72,16 @@ fn setup() -> anyhow::Result<(AbstractAccount<Mock>, Abstract<Mock>, GiftcardIss
 }
 
 // Uploads and returns the giftcard contract
-fn setup_giftcard(mock: &Mock) -> CwGiftcard<Mock> {
-    let giftcard = cw_giftcard::CwGiftcard::new("giftcard", mock.clone());
+fn setup_giftcard(OsmosisTestTube: &OsmosisTestTube) -> CwGiftcard<OsmosisTestTube> {
+    let giftcard = cw_giftcard::CwGiftcard::new("giftcard", OsmosisTestTube.clone());
     giftcard.upload().unwrap();
 
     giftcard
 }
 
 // Uploads and returns the giftcard issuer
-fn setup_giftcard_issuer(mock: &Mock) -> GiftcardIssuer<Mock> {
-    let giftcard_issuer = GiftcardIssuer::new(APP_ID, mock.clone());
+fn setup_giftcard_issuer(OsmosisTestTube: &OsmosisTestTube) -> GiftcardIssuer<OsmosisTestTube> {
+    let giftcard_issuer = GiftcardIssuer::new(APP_ID, OsmosisTestTube.clone());
 
     // deploy the giftcard issuer module
     giftcard_issuer.deploy(APP_VERSION.parse().unwrap()).unwrap();
@@ -64,20 +91,22 @@ fn setup_giftcard_issuer(mock: &Mock) -> GiftcardIssuer<Mock> {
 
 
 // Returns an Abstract with the necessary setup
-fn setup_abstract(mock: &Mock) -> Abstract<Mock> {
-    let abstr_deployment = Abstract::deploy_on(mock.clone(), Empty {}).unwrap();
+fn setup_abstract(OsmosisTestTube: &OsmosisTestTube) -> Abstract<OsmosisTestTube> {
+    let abstr_deployment = Abstract::deploy_on(OsmosisTestTube.clone(), Empty {}).unwrap();
 
     abstr_deployment
 }
 
+const HACK_DEX_ADAPTER_VERSION: &'static str = "0.17.1";
+
 // Returns a dex adapter with the necessary setup
-fn setup_dex_adapter(mock: &Mock) -> DexAdapter<Mock> {
-    let dex_adapter = DexAdapter::new(
+fn setup_dex_adapter(OsmosisTestTube: &OsmosisTestTube) -> HackDexAdapter<OsmosisTestTube> {
+    let mut dex_adapter = HackDexAdapter::new(
         EXCHANGE,
-        mock.clone(),
+        OsmosisTestTube.clone(),
     );
     dex_adapter.deploy(
-        CONTRACT_VERSION.parse().unwrap(),
+        HACK_DEX_ADAPTER_VERSION.parse().unwrap(),
         DexInstantiateMsg {
             recipient_account: 0,
             swap_fee: Decimal::percent(1),
@@ -87,14 +116,22 @@ fn setup_dex_adapter(mock: &Mock) -> DexAdapter<Mock> {
     dex_adapter
 }
 
+// let signing_account = abstr_deployment.account_factory.get_chain().clone().init_account(coins(1000, ISSUE_DENOM))?;
+
 // Returns an account with the necessary setup
-fn setup_new_account(abstr_deployment: &Abstract<Mock>, namespace: impl ToString) -> AbstractAccount<Mock> {
+fn setup_new_account(abstr_deployment: &Abstract<OsmosisTestTube>, namespace: impl ToString) -> anyhow::Result<AbstractAccount<OsmosisTestTube>> {
+    // TODO: might need to move this
+    let signing_account = abstr_deployment
+        .account_factory
+        .get_chain()
+        .sender();
+
     // Create a new account to install the app onto
     let account =
         abstr_deployment
             .account_factory
             .create_default_account(GovernanceDetails::Monarchy {
-                monarch: ADMIN.to_string(),
+                monarch: signing_account.into_string(),
             }).unwrap();
 
     // claim the namespace so app can be deployed
@@ -102,17 +139,17 @@ fn setup_new_account(abstr_deployment: &Abstract<Mock>, namespace: impl ToString
         .version_control
         .claim_namespace(account.id().unwrap(), namespace.to_string()).unwrap();
 
-    account
+    Ok(account)
 }
 
-fn setup_default_assets(abstr: &Abstract<Mock>) {
+fn setup_default_assets(abstr: &Abstract<OsmosisTestTube>) {
     // register juno as an asset
     abstr
         .ans_host
         .update_asset_addresses(vec![(ISSUE_ASSET.to_string(), AssetInfoUnchecked::from_str(&format!("native:{}", ISSUE_DENOM)).unwrap())], vec![]).unwrap();
 }
 
-fn install_modules_on_account(abstr: &Abstract<Mock>, account: &AbstractAccount<Mock>, issuer: &GiftcardIssuer<Mock>, giftcard: CwGiftcard<Mock>) -> anyhow::Result<()> {
+fn install_modules_on_account(abstr: &Abstract<OsmosisTestTube>, account: &AbstractAccount<OsmosisTestTube>, issuer: &GiftcardIssuer<OsmosisTestTube>, giftcard: CwGiftcard<OsmosisTestTube>) -> anyhow::Result<()> {
 
     install_dex_on_account(account)?;
     install_giftcard_issuer_on_account(abstr, account, issuer, AppInstantiateMsg {
@@ -124,14 +161,14 @@ fn install_modules_on_account(abstr: &Abstract<Mock>, account: &AbstractAccount<
     Ok(())
 }
 
-fn install_dex_on_account(account: &AbstractAccount<Mock>) -> anyhow::Result<()> {
+fn install_dex_on_account(account: &AbstractAccount<OsmosisTestTube>) -> anyhow::Result<()> {
     // install exchange module as it's a dependency
     account.install_module(EXCHANGE, &Empty {}, None)?;
 
     Ok(())
 }
 
-fn install_giftcard_issuer_on_account(abstr: &Abstract<Mock>, account: &AbstractAccount<Mock>, issuer: &GiftcardIssuer<Mock>, init_msg: AppInstantiateMsg) -> anyhow::Result<()> {
+fn install_giftcard_issuer_on_account(abstr: &Abstract<OsmosisTestTube>, account: &AbstractAccount<OsmosisTestTube>, issuer: &GiftcardIssuer<OsmosisTestTube>, init_msg: AppInstantiateMsg) -> anyhow::Result<()> {
     account.install_module(
         APP_ID,
         &InstantiateMsg {
@@ -150,7 +187,6 @@ fn install_giftcard_issuer_on_account(abstr: &Abstract<Mock>, account: &Abstract
 }
 
 
-const ISSUE_DENOM: &'static str = "ujuno";
 
 #[test]
 fn successful_install() -> anyhow::Result<()> {
@@ -174,7 +210,7 @@ fn asset_not_found() -> anyhow::Result<()> {
     // Set up the environment and contract
     let (_account, _abstr, gc_issuer, _giftcard) = setup()?;
 
-    let account = setup_new_account(&_abstr, "two");
+    let account = setup_new_account(&_abstr, "two")?;
     install_dex_on_account(&account)?;
     let install_res = install_giftcard_issuer_on_account(&_abstr, &account, &gc_issuer,
                                                          AppInstantiateMsg {
@@ -190,8 +226,6 @@ fn asset_not_found() -> anyhow::Result<()> {
 fn pay_for_gc() -> anyhow::Result<()> {
     // Set up the environment and contract
     let (account, _abstr, gc_issuer, giftcard) = setup()?;
-
-    gc_issuer.get_chain().clone().set_balance(&Addr::unchecked(ADMIN), coins(1000, ISSUE_DENOM))?;
 
     gc_issuer.issue(None, &coins(5u128, ISSUE_DENOM))?;
     Ok(())

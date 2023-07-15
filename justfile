@@ -51,6 +51,12 @@ wasm:
     --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
     ${image}:0.12.13
 
+# Wasm the workspace and move the artifacts to the artifacts directory
+wasm-artifacts:
+  #!/usr/bin/env bash
+  RUSTFLAGS="-C link-arg=-s" cargo wasm
+  mv ./target/wasm32-unknown-unknown/release/*.wasm ./artifacts/
+
 # Generate the schemas for the app contract
 schema:
   cargo schema
