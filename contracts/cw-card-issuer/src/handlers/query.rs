@@ -1,13 +1,19 @@
-use cosmwasm_std::{Binary, Deps, Env, StdResult, to_binary};
+use cosmwasm_std::{to_binary, Binary, Deps, Env, StdResult};
 
 use crate::contract::{AppResult, GiftcardIssuerApp};
 use crate::msg::{AppQueryMsg, ConfigResponse};
 use crate::state::CONFIG;
 
-pub fn query_handler(deps: Deps, _env: Env, app: &GiftcardIssuerApp, msg: AppQueryMsg) -> AppResult<Binary> {
+pub fn query_handler(
+    deps: Deps,
+    _env: Env,
+    _app: &GiftcardIssuerApp,
+    msg: AppQueryMsg,
+) -> AppResult<Binary> {
     match msg {
         AppQueryMsg::Config {} => to_binary(&query_config(deps)?),
-    }.map_err(Into::into)
+    }
+    .map_err(Into::into)
 }
 
 fn query_config(deps: Deps) -> StdResult<ConfigResponse> {

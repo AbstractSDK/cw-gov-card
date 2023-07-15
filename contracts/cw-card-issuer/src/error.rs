@@ -21,10 +21,8 @@ pub enum AppError {
     //
     // #[error("{0}")]
     // Admin(#[from] AdminError),
-
     #[error("{0}")]
     DappError(#[from] AbstractAppError),
-
 
     #[error("{0}")]
     Payment(#[from] PaymentError),
@@ -33,5 +31,5 @@ pub enum AppError {
     Parse(#[from] ParseReplyError),
 
     #[error("Only native tokens are supported.")]
-     OnlyNativeSupported,
+    OnlyNativeSupported,
 }

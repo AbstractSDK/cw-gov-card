@@ -1,20 +1,10 @@
-use abstract_core::objects::{AnsAsset, AssetEntry};
+use abstract_core::objects::AssetEntry;
 use cosmwasm_schema::QueryResponses;
 use cosmwasm_std::Coin;
-use cw_asset::Asset;
+
 use crate::contract::GiftcardIssuerApp;
 
-// This is used for type safety
-// The second part is used to indicate the messages are used as the apps messages
-// This is equivalent to
-// pub type InstantiateMsg = <PaymentApp as abstract_sdk::base::InstantiateEndpoint>::InstantiateMsg;
-// pub type ExecuteMsg = <PaymentApp as abstract_sdk::base::ExecuteEndpoint>::ExecuteMsg;
-// pub type QueryMsg = <PaymentApp as abstract_sdk::base::QueryEndpoint>::QueryMsg;
-// pub type MigrateMsg = <PaymentApp as abstract_sdk::base::MigrateEndpoint>::MigrateMsg;
-
-// impl app::AppExecuteMsg for AppExecuteMsg {}
-// impl app::AppQueryMsg for AppQueryMsg {}
-abstract_app::app_messages!(GiftcardIssuerApp, AppExecuteMsg, AppQueryMsg);
+abstract_app::app_msg_types!(GiftcardIssuerApp, AppExecuteMsg, AppQueryMsg);
 
 /// PaymentApp instantiate message
 #[cosmwasm_schema::cw_serde]

@@ -4,10 +4,9 @@ use cw_orch::{
     tokio::runtime::Runtime,
 };
 
-use abstract_interface::AppDeployer;
 use abstract_giftcard_issuer::{contract::APP_ID, GiftcardIssuer};
+use abstract_interface::AppDeployer;
 use semver::Version;
-use abstract_giftcard_issuer::is::App;
 
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 

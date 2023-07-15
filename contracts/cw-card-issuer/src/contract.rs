@@ -1,9 +1,14 @@
 use crate::msg::AppMigrateMsg;
-use crate::{error::AppError, handlers, msg::{AppExecuteMsg, AppInstantiateMsg, AppQueryMsg}, replies};
-use abstract_app::{AppContract, cw_orch_interface};
+use crate::replies::REPLY_ID_INIT;
+use crate::{
+    error::AppError,
+    handlers,
+    msg::{AppExecuteMsg, AppInstantiateMsg, AppQueryMsg},
+    replies,
+};
+use abstract_app::{cw_orch_interface, AppContract};
 use abstract_core::objects::dependency::StaticDependency;
 use cosmwasm_std::{Empty, Response};
-use crate::replies::REPLY_ID_INIT;
 
 /// The version of your app
 pub const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -14,14 +19,8 @@ pub const APP_ID: &str = "abstract:giftcard-issuer";
 pub type AppResult<T = Response> = Result<T, AppError>;
 
 /// The type of the app that is used to build your app and access the Abstract SDK features.
-pub type GiftcardIssuerApp = AppContract<
-    AppError,
-    AppInstantiateMsg,
-    AppExecuteMsg,
-    AppQueryMsg,
-    AppMigrateMsg,
-    Empty
->;
+pub type GiftcardIssuerApp =
+    AppContract<AppError, AppInstantiateMsg, AppExecuteMsg, AppQueryMsg, AppMigrateMsg, Empty>;
 
 const DEX_DEPENDENCY: StaticDependency = StaticDependency::new(
     abstract_dex_adapter::EXCHANGE,

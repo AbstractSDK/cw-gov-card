@@ -1,13 +1,13 @@
+use crate::contract::{AppResult, GiftcardIssuerApp};
+use crate::state::REPLY_INFO;
 use cosmwasm_std::{Binary, CosmosMsg, DepsMut, Env, Reply, Response};
 use cw_utils::parse_reply_instantiate_data;
 use osmosis_std::shim::Any;
 use osmosis_std::types::cosmos::authz::v1beta1::{Grant, MsgGrant};
 use osmosis_std::types::cosmos::bank::v1beta1::SendAuthorization;
-use crate::contract::{AppResult, GiftcardIssuerApp};
-use crate::state::REPLY_INFO;
 
-pub fn reply_init(deps: DepsMut, env: Env, app: GiftcardIssuerApp, reply: Reply) -> AppResult {
- // TODO!
+pub fn reply_init(deps: DepsMut, env: Env, _app: GiftcardIssuerApp, reply: Reply) -> AppResult {
+    // TODO!
 
     let created = parse_reply_instantiate_data(reply)?;
     let gift_card = created.contract_address;

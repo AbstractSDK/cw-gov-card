@@ -1,12 +1,11 @@
 pub mod contract;
 // This is msg, state, error in one
 // pub mod types;
-mod handlers;
-mod replies;
-pub mod msg;
-pub mod state;
 pub mod error;
-
+mod handlers;
+pub mod msg;
+mod replies;
+pub mod state;
 
 #[cfg(feature = "interface")]
 pub use contract::interface::GiftcardIssuer;

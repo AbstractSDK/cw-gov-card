@@ -1,5 +1,5 @@
-use abstract_sdk::{AbstractResponse, Resolve};
 use abstract_sdk::features::AbstractNameService;
+use abstract_sdk::AbstractResponse;
 use cosmwasm_std::{DepsMut, Env, MessageInfo, Response};
 use cw_asset::AssetInfo;
 

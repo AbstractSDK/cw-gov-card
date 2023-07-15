@@ -1,9 +1,9 @@
-use cosmwasm_std::{Coin, DepsMut, Env, MessageInfo, Response, SubMsg, to_binary, WasmMsg};
-use cw_utils::must_pay;
 use crate::contract::{AppResult, GiftcardIssuerApp};
 use crate::msg::{AppExecuteMsg, GiftCardInstantiateMsg};
 use crate::replies::REPLY_ID_INIT;
 use crate::state::{CONFIG, REPLY_INFO};
+use cosmwasm_std::{to_binary, Coin, DepsMut, Env, MessageInfo, Response, SubMsg, WasmMsg};
+use cw_utils::must_pay;
 
 pub fn execute_handler(
     deps: DepsMut,
@@ -20,7 +20,7 @@ pub fn execute_handler(
 pub fn issue(
     deps: DepsMut,
     info: MessageInfo,
-    app: GiftcardIssuerApp,
+    _app: GiftcardIssuerApp,
     label: Option<String>,
 ) -> AppResult {
     let cfg = CONFIG.load(deps.storage)?;

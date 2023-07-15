@@ -1,6 +1,6 @@
-use abstract_core::objects::{AnsAsset, AssetEntry};
+use abstract_core::objects::AssetEntry;
 use cosmwasm_std::Coin;
-use cw_asset::{Asset, AssetInfo};
+
 use cw_storage_plus::Item;
 
 #[cosmwasm_schema::cw_serde]
