@@ -13,8 +13,8 @@ pub struct AppInstantiateMsg {
     // (We could allow multiple denoms in the future if desired, but this is simpler for now)
     pub issue_asset: AssetEntry,
     // module id of giftcard contract
-   pub giftcard_module_id: u64,
-   // pub giftcard_module_id: String,
+    pub giftcard_module_id: u64,
+    // pub giftcard_module_id: String,
 }
 
 /// PaymentApp execute messages
@@ -24,7 +24,15 @@ pub struct AppInstantiateMsg {
 pub enum AppExecuteMsg {
     // Issue a new card
     #[cfg_attr(feature = "interface", payable)]
-    Issue { label: Option<String> },
+    Issue {
+        label: Option<String>,
+    },
+
+    // Spend from a card
+    Spend {
+        amount: Coin,
+        recipient: String,
+    },
 }
 
 #[cosmwasm_schema::cw_serde]

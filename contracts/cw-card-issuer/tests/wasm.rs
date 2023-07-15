@@ -1,6 +1,6 @@
-use cw_orch::prelude::*;
 use abstract_giftcard_issuer::contract::APP_ID;
 use abstract_giftcard_issuer::GiftcardIssuer;
+use cw_orch::prelude::*;
 
 // consts for testing
 const ADMIN: &str = "admin";

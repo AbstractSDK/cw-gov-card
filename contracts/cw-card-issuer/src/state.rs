@@ -1,5 +1,6 @@
 use abstract_core::objects::AssetEntry;
-use cosmwasm_std::Coin;
+use cosmwasm_std::{Addr, Coin};
+use cw_item_set::Set;
 
 use cw_storage_plus::Item;
 
@@ -16,5 +17,5 @@ pub struct Config {
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");
-
 pub const REPLY_INFO: Item<Coin> = Item::new("reply_info");
+pub const GIFTCARDS: Set<&String> = Set::new("giftcards", "gc");

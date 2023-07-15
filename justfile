@@ -54,7 +54,8 @@ wasm:
 # Wasm the workspace and move the artifacts to the artifacts directory
 wasm-artifacts:
   #!/usr/bin/env bash
-  RUSTFLAGS="-C link-arg=-s" cargo wasm
+  RUSTFLAGS="-C link-arg=-s" cargo wasm --package cw-giftcard
+  RUSTFLAGS="-C link-arg=-s" cargo wasm --package cw-card-issuer
   mv ./target/wasm32-unknown-unknown/release/*.wasm ./artifacts/
 
 # Generate the schemas for the app contract

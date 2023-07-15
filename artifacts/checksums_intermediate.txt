@@ -1,2 +1,2 @@
-49ed73bdfdac931e9faaf74442ef3ae5a36793b5abf243b01903532b267f69d8  ./target/wasm32-unknown-unknown/release/abstract_giftcard_issuer.wasm
-33f7a4d976b909b99a4e0ac746ce785e7cf6b89aead689e2e96976b79f66173e  ./target/wasm32-unknown-unknown/release/cw_giftcard.wasm
+6e74f4f4c28c5ea53814d3c01270cef64d42c957db4473102bd91fb54494e989  ./target/wasm32-unknown-unknown/release/abstract_giftcard_issuer.wasm
+3f2df7be621798ab755090f7af4f40ec0b01ec4b2b1a2fb6d23e1d73c487af70  ./target/wasm32-unknown-unknown/release/cw_giftcard.wasm

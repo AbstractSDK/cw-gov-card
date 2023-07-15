@@ -24,7 +24,6 @@ cw-storage-plus = "1.1.0"
 thiserror = { version = "1.0" }
 schemars = "0.8"
 cw-asset = { version = "3.0" }
-cw20 = { version = "1.0.1" }
 cw-utils = "1.0.1"
 cw2 = "1.0.1"
 osmosis-std = "0.16.0"

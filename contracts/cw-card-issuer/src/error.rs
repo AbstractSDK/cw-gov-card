@@ -1,7 +1,8 @@
 use abstract_app::AppError as AbstractAppError;
 use abstract_core::AbstractError;
 use abstract_sdk::AbstractSdkError;
-use cosmwasm_std::StdError;
+use cosmwasm_std::{Coin, StdError};
+use cw_asset::Asset;
 use cw_utils::{ParseReplyError, PaymentError};
 use thiserror::Error;
 
@@ -18,9 +19,10 @@ pub enum AppError {
 
     // #[error("{0}")]
     // Asset(#[from] AssetError),
-    //
-    // #[error("{0}")]
-    // Admin(#[from] AdminError),
+
+    #[error("{0}")]
+    Admin(#[from] cw_controllers::AdminError),
+
     #[error("{0}")]
     DappError(#[from] AbstractAppError),
 
@@ -35,4 +37,13 @@ pub enum AppError {
 
     #[error("Gitfcard module not found.")]
     ModuleNotFound,
+
+    #[error("Only spend via authz is supported. Sender: {0}")]
+    OnlySpendViaAuthz(String),
+
+    #[error("Insufficient funds. Balance: {balance:?}, required: {required:?}")]
+    InsufficientFunds {
+        balance: Asset,
+        required: Coin,
+    },
 }

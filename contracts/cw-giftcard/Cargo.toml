@@ -28,6 +28,7 @@ schemars = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 cw-orch = { workspace = true, optional = true }
+abstract-giftcard-issuer = { path = "../cw-card-issuer", default-features = false }
 
 [dev-dependencies]
 cw-multi-test = { workspace = true }

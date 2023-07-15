@@ -34,7 +34,7 @@ pub enum ExecuteMsg {
     // Change owner
     Transfer { owner: String },
     // Spend value
-    Spend { amount: Coin, recipient: String },
+    Redeem { amount: Coin, recipient: String },
 }
 
 // Queries copied from gauge-orchestrator for now (we could use a common crate for this)

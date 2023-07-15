@@ -6,7 +6,7 @@ use crate::{
     msg::{AppExecuteMsg, AppInstantiateMsg, AppQueryMsg},
     replies,
 };
-use abstract_app::{AppContract};
+use abstract_app::AppContract;
 use abstract_core::objects::dependency::StaticDependency;
 use cosmwasm_std::{Empty, Response};
 
@@ -33,7 +33,7 @@ const APP: GiftcardIssuerApp = GiftcardIssuerApp::new(APP_ID, APP_VERSION, None)
     .with_query(handlers::query_handler)
     // .with_migrate(handlers::migrate_handler)
     // .with_receive(handlers::receive_handler)
-    .with_replies(&[(REPLY_ID_INIT, replies::reply_init)])
+    .with_replies(&[(REPLY_ID_INIT, replies::reply_on_issuance)])
     .with_dependencies(&[DEX_DEPENDENCY]);
 
 // Export handlers
