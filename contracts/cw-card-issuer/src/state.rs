@@ -9,6 +9,8 @@ pub struct Config {
     pub issue_asset: AssetEntry,
     // denom of the cards it issues
     pub issue_denom: String,
+    // module id of giftcard contract
+    pub giftcard_module_id: String,
     // code id of giftcard contract
     pub giftcard_id: u64,
 }

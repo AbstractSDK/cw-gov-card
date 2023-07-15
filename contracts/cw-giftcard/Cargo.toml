@@ -11,8 +11,11 @@ crate-type = ["cdylib", "rlib"]
 [features]
 # for more explicit tests, cargo test --features=backtraces
 backtraces = ["cosmwasm-std/backtraces"]
-# use library feature to disable all instantiate/execute/query exports
-library = []
+default = ["export"]
+export = []
+# enable node-backed tests (ensure Docker is running)
+# run with `cargo test --jobs 1 --features node-tests`
+interface = ["export", "dep:cw-orch"]
 
 [dependencies]
 cosmwasm-std = { workspace = true }
@@ -24,3 +27,7 @@ osmosis-std = { workspace = true }
 schemars = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
+cw-orch = { workspace = true, optional = true }
+
+[dev-dependencies]
+cw-multi-test = { workspace = true }

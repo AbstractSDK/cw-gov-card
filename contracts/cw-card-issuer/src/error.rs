@@ -32,4 +32,7 @@ pub enum AppError {
 
     #[error("Only native tokens are supported.")]
     OnlyNativeSupported,
+
+    #[error("Gitfcard module not found.")]
+    ModuleNotFound,
 }

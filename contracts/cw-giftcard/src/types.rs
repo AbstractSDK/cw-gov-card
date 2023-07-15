@@ -29,6 +29,7 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
     // Change owner
     Transfer { owner: String },
@@ -39,6 +40,7 @@ pub enum ExecuteMsg {
 // Queries copied from gauge-orchestrator for now (we could use a common crate for this)
 /// Queries the gauge requires from the adapter contract in order to function
 #[cw_serde]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
     #[returns(ConfigResponse)]

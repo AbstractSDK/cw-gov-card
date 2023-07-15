@@ -16,7 +16,8 @@ use crate::types::{
 const CONTRACT_NAME: &str = "crates.io:cw-giftcard";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-#[cfg_attr(not(feature = "library"), entry_point)]
+#[cfg_attr(feature = "export", entry_point)]
+#[cfg_attr(feature = "interface", cw_orch::interface_entry_point)]
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
@@ -38,7 +39,8 @@ pub fn instantiate(
     Ok(Response::new())
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
+#[cfg_attr(feature = "export", entry_point)]
+#[cfg_attr(feature = "interface", cw_orch::interface_entry_point)]
 pub fn execute(
     deps: DepsMut,
     _env: Env,
@@ -98,7 +100,8 @@ pub fn spend(
     Ok(Response::new().add_message(msg))
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
+#[cfg_attr(feature = "export", entry_point)]
+#[cfg_attr(feature = "interface", cw_orch::interface_entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => {

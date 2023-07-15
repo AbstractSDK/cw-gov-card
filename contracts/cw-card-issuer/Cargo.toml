@@ -62,3 +62,4 @@ cw-orch = { version = "0.13", features = ["daemon"] }
 abstract-dex-adapter = { git = "https://github.com/AbstractSDK/abstract.git", tag = "v0.17.0", features = [
   "interface",
 ] }
+cw-giftcard = { path = "../cw-giftcard", features = ["interface"] }

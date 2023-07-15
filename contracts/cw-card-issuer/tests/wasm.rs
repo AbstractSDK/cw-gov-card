@@ -1,7 +1,6 @@
-use abstract_payment_app::contract::APP_ID;
-use abstract_payment_app::PaymentApp;
-
 use cw_orch::prelude::*;
+use abstract_giftcard_issuer::contract::APP_ID;
+use abstract_giftcard_issuer::GiftcardIssuer;
 
 // consts for testing
 const ADMIN: &str = "admin";
@@ -14,7 +13,7 @@ fn successful_wasm() {
     let mock = Mock::new(&sender);
 
     // Construct the counter interface
-    let contract = PaymentApp::new(APP_ID, mock);
+    let contract = GiftcardIssuer::new(APP_ID, mock);
 
     contract.wasm();
 }

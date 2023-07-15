@@ -6,7 +6,7 @@ use crate::{
     msg::{AppExecuteMsg, AppInstantiateMsg, AppQueryMsg},
     replies,
 };
-use abstract_app::{cw_orch_interface, AppContract};
+use abstract_app::{AppContract};
 use abstract_core::objects::dependency::StaticDependency;
 use cosmwasm_std::{Empty, Response};
 
@@ -41,4 +41,4 @@ const APP: GiftcardIssuerApp = GiftcardIssuerApp::new(APP_ID, APP_VERSION, None)
 abstract_app::export_endpoints!(APP, GiftcardIssuerApp);
 
 #[cfg(feature = "interface")]
-cw_orch_interface!(APP, GiftcardIssuerApp, GiftcardIssuer);
+abstract_app::cw_orch_interface!(APP, GiftcardIssuerApp, GiftcardIssuer);

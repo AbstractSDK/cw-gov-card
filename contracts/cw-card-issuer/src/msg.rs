@@ -1,4 +1,4 @@
-use abstract_core::objects::AssetEntry;
+use abstract_core::objects::{AssetEntry, ContractEntry};
 use cosmwasm_schema::QueryResponses;
 use cosmwasm_std::Coin;
 
@@ -12,8 +12,9 @@ pub struct AppInstantiateMsg {
     // denom of the cards it issues
     // (We could allow multiple denoms in the future if desired, but this is simpler for now)
     pub issue_asset: AssetEntry,
-    // module id of giftcard contract (TODO
-    pub giftcard_id: u64,
+    // module id of giftcard contract
+   pub giftcard_module_id: u64,
+   // pub giftcard_module_id: String,
 }
 
 /// PaymentApp execute messages
