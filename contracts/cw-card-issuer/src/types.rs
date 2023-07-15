@@ -51,20 +51,10 @@ pub struct ConfigResponse {
     pub giftcard_id: u64,
 }
 
-pub const CONFIG: Item<Config> = Item::new("config");
-pub const REPLY_INFO: Item<Coin> = Item::new("reply_info");
-
 #[cw_serde]
 pub struct Config {
     // denom of the cards it issues
     pub denom: String,
     // code id of giftcard contract
     pub giftcard_id: u64,
-}
-
-// TODO: shared api package, don't copy
-#[cw_serde]
-pub struct GiftCardInstantiateMsg {
-    pub owner: String,
-    pub allowance: Coin,
 }

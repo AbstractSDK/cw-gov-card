@@ -1,139 +1,45 @@
-#[cfg(not(feature = "library"))]
-use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    to_binary, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply, Response,
-    StdResult, SubMsg, WasmMsg,
-};
-use cw2::set_contract_version;
-use cw_utils::{must_pay, parse_reply_instantiate_data};
-use osmosis_std::shim::Any;
-use osmosis_std::types::cosmos::authz::v1beta1::{Grant, MsgGrant};
-use osmosis_std::types::cosmos::bank::v1beta1::SendAuthorization;
+use crate::msg::AppMigrateMsg;
+use crate::{error::AppError, handlers, msg::{AppExecuteMsg, AppInstantiateMsg, AppQueryMsg}, replies};
+use abstract_app::{AppContract, cw_orch_interface};
+use abstract_core::objects::dependency::StaticDependency;
+use cosmwasm_std::{Empty, Response};
+use crate::replies::REPLY_ID_INIT;
 
-use crate::types::{
-    Config, ConfigResponse, ContractError, ExecuteMsg, GiftCardInstantiateMsg, InstantiateMsg,
-    QueryMsg, CONFIG, REPLY_INFO,
-};
+/// The version of your app
+pub const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
+/// The id of the app
+pub const APP_ID: &str = "abstract:giftcard-issuer";
 
-// version info for migration info
-const CONTRACT_NAME: &str = "crates.io:cw-card-issuer";
-const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+/// The type of the result returned by your app's entry points.
+pub type AppResult<T = Response> = Result<T, AppError>;
 
-const REPLY_ID_INIT: u64 = 1;
+/// The type of the app that is used to build your app and access the Abstract SDK features.
+pub type GiftcardIssuerApp = AppContract<
+    AppError,
+    AppInstantiateMsg,
+    AppExecuteMsg,
+    AppQueryMsg,
+    AppMigrateMsg,
+    Empty
+>;
 
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn instantiate(
-    deps: DepsMut,
-    _env: Env,
-    _info: MessageInfo,
-    msg: InstantiateMsg,
-) -> Result<Response, ContractError> {
-    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+const DEX_DEPENDENCY: StaticDependency = StaticDependency::new(
+    abstract_dex_adapter::EXCHANGE,
+    &[abstract_dex_adapter::contract::CONTRACT_VERSION],
+);
 
-    // TODO: validate denom not zero
-    let cfg = Config {
-        denom: msg.denom,
-        giftcard_id: msg.giftcard_id,
-    };
-    CONFIG.save(deps.storage, &cfg)?;
-    Ok(Response::new())
-}
+const APP: GiftcardIssuerApp = GiftcardIssuerApp::new(APP_ID, APP_VERSION, None)
+    .with_instantiate(handlers::instantiate_handler)
+    .with_execute(handlers::execute_handler)
+    .with_query(handlers::query_handler)
+    // .with_migrate(handlers::migrate_handler)
+    // .with_receive(handlers::receive_handler)
+    .with_replies(&[(REPLY_ID_INIT, replies::reply_init)])
+    .with_dependencies(&[DEX_DEPENDENCY]);
 
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn execute(
-    deps: DepsMut,
-    _env: Env,
-    info: MessageInfo,
-    msg: ExecuteMsg,
-) -> Result<Response, ContractError> {
-    match msg {
-        ExecuteMsg::Issue { label } => issue(deps, info, label),
-    }
-}
+// Export handlers
+#[cfg(feature = "export")]
+abstract_app::export_endpoints!(APP, GiftcardIssuerApp);
 
-pub fn issue(
-    deps: DepsMut,
-    info: MessageInfo,
-    label: Option<String>,
-) -> Result<Response, ContractError> {
-    let cfg = CONFIG.load(deps.storage)?;
-    let amount = must_pay(&info, &cfg.denom)?;
-
-    // instantitate giftcard
-    let allowance = Coin {
-        amount,
-        denom: cfg.denom,
-    };
-    REPLY_INFO.save(deps.storage, &allowance)?;
-
-    let msg = GiftCardInstantiateMsg {
-        owner: info.sender.into(),
-        allowance: allowance.clone(),
-    };
-    let msg = WasmMsg::Instantiate {
-        admin: None,
-        code_id: cfg.giftcard_id,
-        msg: to_binary(&msg)?,
-        funds: vec![allowance],
-        label: label.unwrap_or_else(|| "Awesome Gift Card".to_string()),
-    };
-    let msg = SubMsg::reply_on_success(msg, REPLY_ID_INIT);
-
-    // store amount for reply
-    Ok(Response::new().add_submessage(msg))
-}
-
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
-    match msg {
-        QueryMsg::Config {} => {
-            let cfg = CONFIG.load(deps.storage)?;
-            let cfg = ConfigResponse {
-                denom: cfg.denom,
-                giftcard_id: cfg.giftcard_id,
-            };
-            to_binary(&cfg)
-        }
-    }
-}
-
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, ContractError> {
-    match reply.id {
-        // only on success and we just query current state, ignore response data
-        REPLY_ID_INIT => {
-            let created = parse_reply_instantiate_data(reply)?;
-            reply_init(deps, env, created.contract_address)
-        }
-        _ => Err(ContractError::InvalidReplyId(reply.id)),
-    }
-}
-
-pub fn reply_init(deps: DepsMut, env: Env, gift_card: String) -> Result<Response, ContractError> {
-    // figure out who to send back to
-    let allowance = REPLY_INFO.load(deps.storage)?;
-    REPLY_INFO.remove(deps.storage);
-
-    // TODO: Issue authz allowance to spend the allowance to the gift_card address
-    let send_auth = Any {
-        type_url: "/cosmos.bank.v1beta1.SendAuthorization".to_string(),
-        value: SendAuthorization {
-            spend_limit: vec![allowance.into()],
-        }
-        .to_proto_bytes(),
-    };
-    let grant = MsgGrant {
-        granter: env.contract.address.to_string(),
-        grantee: gift_card,
-        grant: Some(Grant {
-            authorization: Some(send_auth),
-            expiration: None,
-        }),
-    };
-    let msg = CosmosMsg::Stargate {
-        type_url: "/cosmos.authz.v1beta1.MsgGrant".to_string(),
-        value: Binary(grant.to_proto_bytes()),
-    };
-
-    Ok(Response::new().add_message(msg))
-}
+#[cfg(feature = "interface")]
+cw_orch_interface!(APP, GiftcardIssuerApp, GiftcardIssuer);
