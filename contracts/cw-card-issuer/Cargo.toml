@@ -1,7 +1,13 @@
 [package]
-name = "cw-card-issuer"
+name = "abstract-giftcard-issuer"
+authors = [
+  "CyberHoward <cyberhoward@protonmail.com>",
+  "Adair <adair@abstract.money>",
+  "Abstract Money <contact@abstract.money>",
+]
 description = "Issuing contract for Giftcard NFTs"
-version = { workspace = true }
+version = "0.0.1"
+#version = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
 
@@ -9,14 +15,54 @@ license = { workspace = true }
 crate-type = ["cdylib", "rlib"]
 
 [features]
-# for more explicit tests, cargo test --features=backtraces
-backtraces = ["cosmwasm-std/backtraces"]
-# use library feature to disable all instantiate/execute/query exports
-library = []
+default = ["export"]
+export = []
+# enable node-backed tests (ensure Docker is running)
+# run with `cargo test --jobs 1 --features node-tests`
+node-tests = ["interface"]
+interface = ["export", "dep:abstract-interface", "dep:cw-orch"]
+schema = ["abstract-app/schema"]
+
+#[dependencies]
+#abstract-sdk = { version = "0.16.1" }
+#abstract-app = { version = "0.16.1" }
+#abstract-core = { version = "0.16.1" }
+#abstract-dex-adapter = { git = "https://github.com/AbstractSDK/adapters.git", ref = "v0.17.0", default-features = false }
+#cosmwasm-std = { workspace = true }
+#cosmwasm-schema = { workspace = true }
+#cw-storage-plus = { workspace = true }
+#cw2 = { workspace = true }
+#cw-utils = { workspace = true }
+#osmosis-std = { workspace = true }
+#schemars = { workspace = true }
+#serde = { workspace = true }
+#thiserror = { workspace = true }
+#
+## Dependencies for interface
+#abstract-interface = { version = "0.16.1", optional = true }
+#cw-orch = { version = "0.13", optional = true }
+#cw-paginate = "0.2.1"
+#
+#
+#[dev-dependencies]
+#abstract-interface = { version = "0.16.1", features = ["daemon"] }
+#abstract-testing = { version = "0.16.1" }
+#abstract-sdk = { version = "0.16.1", features = ["test-utils"] }
+#speculoos = "0.11.0"
+#semver = "1.0"
+#dotenv = "0.15.0"
+#env_logger = "0.10.0"
+#cw-orch = { version = "0.13", features = ["daemon"] }
+#
+#abstract-dex-adapter = { git = "https://github.com/AbstractSDK/adapters.git", ref = "v0.17.0", features = [
+#  "interface",
+#] }
 
 [dependencies]
-abstract-sdk = { version = "0.17.0" }
-abstract-app = { version = "0.17.0" }
+abstract-sdk = { git = "https://github.com/AbstractSDK/abstract.git", ref = "v0.17.0" }
+abstract-app = { git = "https://github.com/AbstractSDK/abstract.git", ref = "v0.17.0" }
+abstract-core = { git = "https://github.com/AbstractSDK/abstract.git", ref = "v0.17.0" }
+abstract-dex-adapter = { git = "https://github.com/AbstractSDK/abstract.git", ref = "v0.17.0", default-features = false }
 cosmwasm-std = { workspace = true }
 cosmwasm-schema = { workspace = true }
 cw-storage-plus = { workspace = true }
@@ -26,3 +72,24 @@ osmosis-std = { workspace = true }
 schemars = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
+
+# Dependencies for interface
+abstract-interface = { git = "https://github.com/AbstractSDK/abstract.git", ref = "v0.17.0", optional = true }
+cw-orch = { version = "0.13", optional = true }
+cw-paginate = "0.2.1"
+
+
+#[dev-dependencies]
+##abstract-payment-app = { path = "contracts/cw-card-issuer", features = ["interface"] }
+#abstract-interface = { git = "https://github.com/AbstractSDK/abstract.git", ref = "v0.17.0", features = ["daemon"] }
+#abstract-testing = { git = "https://github.com/AbstractSDK/abstract.git", ref = "v0.17.0" }
+#abstract-sdk = { git = "https://github.com/AbstractSDK/abstract.git", ref = "v0.17.0", features = ["test-utils"] }
+#speculoos = "0.11.0"
+#semver = "1.0"
+#dotenv = "0.15.0"
+#env_logger = "0.10.0"
+#cw-orch = { version = "0.13", features = ["daemon"] }
+#
+#abstract-dex-adapter = { git = "https://github.com/AbstractSDK/abstract.git", ref = "v0.17.0", features = [
+#  "interface",
+#] }
