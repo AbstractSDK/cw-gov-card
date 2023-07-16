@@ -125,9 +125,9 @@ pub fn cast_vote(
     let mut cfg = CONFIG.load(deps.storage)?;
     ensure_eq!(info.sender, cfg.owner, ContractError::NotOwner);
 
-    let prop = query_proposal(&deps.querier, proposal_id)?;
-
-    ensure_eq!(prop.status, ProposalStatus::VotingPeriod as i32, ContractError::NotVotingPeriod(proposal_id));
+    // let prop = query_proposal(&deps.querier, proposal_id)?;
+    //
+    // ensure_eq!(prop.status, ProposalStatus::VotingPeriod as i32, ContractError::NotVotingPeriod(proposal_id));
 
     CONFIG.save(deps.storage, &cfg)?;
 

@@ -1,4 +1,6 @@
+use std::ops::Add;
 use std::str::FromStr;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use abstract_core::{ans_host::ExecuteMsgFns as AnsExecMsgFns, app::BaseInstantiateMsg, objects::gov_type::GovernanceDetails, objects::AssetEntry, ABSTRACT_EVENT_TYPE};
 use abstract_core::objects::price_source::UncheckedPriceSource;
@@ -11,11 +13,18 @@ use abstract_dex_adapter::{
 };
 use abstract_interface::{Abstract, AbstractAccount, AppDeployer, VCExecFns, *};
 use abstract_testing::prelude::TEST_NAMESPACE;
-use cosmwasm_std::{coin, coins, Decimal, Uint128};
+use cosmos_sdk_proto::cosmos::distribution::v1beta1::CommunityPoolSpendProposal;
+use cosmwasm_std::{coin, coins, Decimal, Uint128, VoteOption};
 use cw_asset::AssetInfoUnchecked;
 // Use prelude to get all the necessary imports
 use cw_orch::{anyhow, deploy::Deploy, interface, prelude::*};
 use cw_orch::osmosis_test_tube::osmosis_test_tube::Account;
+use osmosis_std::shim::{Any, Timestamp};
+use osmosis_std::types::cosmos::authz::v1beta1::{GenericAuthorization, Grant, MsgGrant, MsgGrantResponse};
+use osmosis_std::types::cosmos::bank::v1beta1::MsgSend;
+use osmosis_test_tube::{Gov, Module, Runner};
+use osmosis_test_tube::cosmrs::bip32::secp256k1::pkcs8::der::Encode;
+use osmosis_test_tube::cosmrs::proto::cosmos::gov::v1beta1::{MsgSubmitProposal, QueryProposalRequest};
 use speculoos::prelude::*;
 
 use abstract_giftcard_issuer::{
@@ -253,7 +262,8 @@ fn asset_not_found() -> anyhow::Result<()> {
 fn post_bribe() -> anyhow::Result<()> {
     // Set up the environment and contract
     let (account, _abstr, gc_issuer, giftcard) = setup()?;
-    let sender = gc_issuer.get_chain().sender();
+    let tube = gc_issuer.get_chain();
+    let sender = tube.sender();
     println!("sender: {:?}", sender);
 
     // let issue_res = gc_issuer.call_as(&buyer).issue(None, &coins(500u128, ISSUE_DENOM));
@@ -267,7 +277,7 @@ fn post_bribe() -> anyhow::Result<()> {
 
     let voter_card_addr = issue_res.event_attr_value(ABSTRACT_EVENT_TYPE, "voter_card")?;
 
-    let mut voter_card = CwGovCard::new("cw-gov-card", gc_issuer.get_chain().clone());
+    let mut voter_card = CwGovCard::new("cw-gov-card", tube.clone());
     voter_card.set_address(&Addr::unchecked(voter_card_addr.clone()));
     println!("voter_card_addr: {:?}", voter_card_addr);
     let voter_card_config = cw_gov_card::types::QueryMsgFns::config(&voter_card)?;
@@ -284,6 +294,78 @@ fn post_bribe() -> anyhow::Result<()> {
     let voter_card_config = cw_gov_card::types::QueryMsgFns::config(&voter_card)?;
     // check that the voter card is owned by the briber
     assert_that!(voter_card_config.owner).is_equal_to(sender.to_string());
+
+    let tube = tube.clone();
+    let proposal = {
+        let mut app_binding = tube.app.borrow_mut();
+        let gov = Gov::new(&mut *app_binding);
+
+        let mut sender_binding = tube.sender.borrow_mut();
+        let submit = gov.submit_executable_proposal("/cosmos.distribution.v1beta1.CommunityPoolSpendProposal".to_string(), CommunityPoolSpendProposal {
+            title: "aoeu".to_string(),
+            description: "aoeu".to_string(),
+            recipient: sender.to_string(),
+            amount: vec![],
+        },
+                                       vec![],
+                                       sender.to_string(),
+                                       &mut *sender_binding,
+        );
+
+        let query = gov.query_proposal(&QueryProposalRequest{
+            proposal_id: 1,
+        })?;
+
+        println!("query: {:?}", query);
+
+        submit
+    };
+
+    let proposal_id = assert_that!(proposal).is_ok().subject.data.proposal_id;
+
+    // vote on the proposal as the nft
+    // should fail the first time without authz
+    let vote_res = voter_card.cast_vote(proposal_id, VoteOption::Yes);
+    assert_that!(vote_res).is_err().matches(|e| {
+        e.to_string().contains("unauthorized")
+    });
+
+
+    let tube = tube.clone();
+    // authorize the voter card to vote on behalf of the issuer
+    let authz_res = {
+        let mut app_binding = tube.app.borrow_mut();
+        let mut sender_binding = tube.sender.borrow_mut();
+
+        let now = SystemTime::now();
+        let since_the_epoch = now
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards");
+
+        let in_seconds = since_the_epoch.add(Duration::new((60 * 6* 24) as u64, 0)).as_secs() as i64;
+
+        (&mut *app_binding).execute::<osmosis_std::types::cosmos::authz::v1beta1::MsgGrant, MsgGrantResponse>(MsgGrant {
+            granter: sender.to_string(),
+            grantee: voter_card_addr.clone(),
+            grant: Some(Grant {
+                authorization: Some(Any {
+                    type_url: "/cosmos.authz.v1beta1.GenericAuthorization".to_string(),
+                    value: GenericAuthorization {
+                        msg: "/cosmos.gov.v1beta1.MsgVote".to_string(),
+                    }.to_proto_bytes(),
+                }),
+                expiration: Some(Timestamp {
+                    seconds: in_seconds,
+                    nanos: 0,
+                }),
+            }),
+        },       "/cosmos.authz.v1beta1.MsgGrant", &mut *sender_binding)
+    };
+
+    assert_that!(authz_res).is_ok();
+
+    let vote_res = voter_card.cast_vote(proposal_id, VoteOption::Yes);
+    assert_that!(vote_res).is_ok();
 
     Ok(())
 }
