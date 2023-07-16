@@ -2,37 +2,36 @@ use std::ops::Add;
 use std::str::FromStr;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use abstract_core::{ans_host::ExecuteMsgFns as AnsExecMsgFns, app::BaseInstantiateMsg, objects::gov_type::GovernanceDetails, objects::AssetEntry, ABSTRACT_EVENT_TYPE};
-use abstract_core::objects::price_source::UncheckedPriceSource;
+use abstract_core::{ABSTRACT_EVENT_TYPE, ans_host::ExecuteMsgFns as AnsExecMsgFns, app::BaseInstantiateMsg, objects::gov_type::GovernanceDetails};
 use abstract_dex_adapter::{
+    EXCHANGE,
     msg::{
         DexInstantiateMsg, ExecuteMsg as FullDexExecuteMsg,
         InstantiateMsg as FullDexInstantiateMsg, QueryMsg as FullDexQueryMsg,
     },
-    EXCHANGE,
 };
-use abstract_interface::{Abstract, AbstractAccount, AppDeployer, VCExecFns, *};
+use abstract_interface::{*, Abstract, AbstractAccount, AppDeployer, VCExecFns};
 use abstract_testing::prelude::TEST_NAMESPACE;
+use cosmos_sdk_proto::cosmos::base;
 use cosmos_sdk_proto::cosmos::distribution::v1beta1::CommunityPoolSpendProposal;
-use cosmwasm_std::{coin, coins, Decimal, Uint128, VoteOption};
+use cosmwasm_std::{coin, coins, Decimal, VoteOption};
 use cw_asset::AssetInfoUnchecked;
 // Use prelude to get all the necessary imports
 use cw_orch::{anyhow, deploy::Deploy, interface, prelude::*};
 use cw_orch::osmosis_test_tube::osmosis_test_tube::Account;
 use osmosis_std::shim::{Any, Timestamp};
 use osmosis_std::types::cosmos::authz::v1beta1::{GenericAuthorization, Grant, MsgGrant, MsgGrantResponse};
-use osmosis_std::types::cosmos::bank::v1beta1::MsgSend;
 use osmosis_test_tube::{Gov, Module, Runner};
-use osmosis_test_tube::cosmrs::bip32::secp256k1::pkcs8::der::Encode;
-use osmosis_test_tube::cosmrs::proto::cosmos::gov::v1beta1::{MsgSubmitProposal, QueryProposalRequest};
+use osmosis_test_tube::cosmrs::proto::cosmos::gov::v1beta1::{QueryParamsRequest, QueryProposalRequest};
+use osmosis_test_tube::cosmrs::proto::cosmos::params::v1beta1::{ParamChange, ParameterChangeProposal};
 use speculoos::prelude::*;
 
 use abstract_giftcard_issuer::{
+    *,
     contract::{APP_ID, APP_VERSION},
-    msg::{AppInstantiateMsg, ConfigResponse, InstantiateMsg},
-    GiftcardIssuer, *,
+    GiftcardIssuer, msg::{AppInstantiateMsg, ConfigResponse, InstantiateMsg},
 };
-use cw_gov_card::{CwGovCard, CwGiftcardExecuteFns};
+use cw_gov_card::{CwGiftcardExecuteFns, CwGovCard};
 
 // consts for testing
 const ADMIN: &str = "admin";
@@ -85,16 +84,16 @@ fn setup() -> anyhow::Result<(
 }
 
 // Uploads and returns the giftcard contract
-fn setup_giftcard(OsmosisTestTube: &OsmosisTestTube) -> CwGovCard<OsmosisTestTube> {
-    let giftcard = cw_gov_card::CwGovCard::new("giftcard", OsmosisTestTube.clone());
+fn setup_giftcard(tube: &OsmosisTestTube) -> CwGovCard<OsmosisTestTube> {
+    let giftcard = cw_gov_card::CwGovCard::new("giftcard", tube.clone());
     giftcard.upload().unwrap();
 
     giftcard
 }
 
 // Uploads and returns the giftcard issuer
-fn setup_giftcard_issuer(OsmosisTestTube: &OsmosisTestTube) -> GiftcardIssuer<OsmosisTestTube> {
-    let giftcard_issuer = GiftcardIssuer::new(APP_ID, OsmosisTestTube.clone());
+fn setup_giftcard_issuer(tube: &OsmosisTestTube) -> GiftcardIssuer<OsmosisTestTube> {
+    let giftcard_issuer = GiftcardIssuer::new(APP_ID, tube.clone());
 
     // deploy the giftcard issuer module
     giftcard_issuer
@@ -105,8 +104,8 @@ fn setup_giftcard_issuer(OsmosisTestTube: &OsmosisTestTube) -> GiftcardIssuer<Os
 }
 
 // Returns an Abstract with the necessary setup
-fn setup_abstract(OsmosisTestTube: &OsmosisTestTube) -> Abstract<OsmosisTestTube> {
-    let abstr_deployment = Abstract::deploy_on(OsmosisTestTube.clone(), Empty {}).unwrap();
+fn setup_abstract(tube: &OsmosisTestTube) -> Abstract<OsmosisTestTube> {
+    let abstr_deployment = Abstract::deploy_on(tube.clone(), Empty {}).unwrap();
 
     abstr_deployment
 }
@@ -114,8 +113,8 @@ fn setup_abstract(OsmosisTestTube: &OsmosisTestTube) -> Abstract<OsmosisTestTube
 const HACK_DEX_ADAPTER_VERSION: &'static str = "0.17.1";
 
 // Returns a dex adapter with the necessary setup
-fn setup_dex_adapter(OsmosisTestTube: &OsmosisTestTube) -> HackDexAdapter<OsmosisTestTube> {
-    let mut dex_adapter = HackDexAdapter::new(EXCHANGE, OsmosisTestTube.clone());
+fn setup_dex_adapter(tube: &OsmosisTestTube) -> HackDexAdapter<OsmosisTestTube> {
+    let mut dex_adapter = HackDexAdapter::new(EXCHANGE, tube.clone());
     dex_adapter
         .deploy(
             HACK_DEX_ADAPTER_VERSION.parse().unwrap(),
@@ -295,30 +294,60 @@ fn post_bribe() -> anyhow::Result<()> {
     // check that the voter card is owned by the briber
     assert_that!(voter_card_config.owner).is_equal_to(sender.to_string());
 
-    let tube = tube.clone();
+    let proposer = tube.init_accounts(coins(100000000000, ISSUE_DENOM), 1)?.pop().unwrap();
+
+
     let proposal = {
+        let (prop, voting_period) = {
+            let mut app_binding = tube.app.borrow_mut();
+            let gov = Gov::new(&mut *app_binding);
+
+            let mut sender_binding = tube.sender.borrow_mut();
+            let proposal_submission = gov.submit_executable_proposal("/cosmos.distribution.v1beta1.CommunityPoolSpendProposal".to_string(), CommunityPoolSpendProposal {
+                title: "aoeu".to_string(),
+                description: "aoeu".to_string(),
+                recipient: sender.to_string(),
+                amount: vec![base::v1beta1::Coin {
+                    denom: "uosmo".to_string(),
+                    amount: 1000000.to_string(),
+                }],
+            },
+             vec![],
+                                                                     proposer.address(),
+                                                                     &proposer,
+            );
+
+
+
+            // query params
+            let params = gov.query_params(&QueryParamsRequest {
+                params_type: "voting".to_string(),
+            })?;
+
+            // get voting period
+            let voting_period = params
+                .voting_params
+                .expect("voting params must exist")
+                .voting_period
+                .expect("voting period must exist");
+
+            (proposal_submission, voting_period)
+        };
+
+        println!("prop_submission: {:?}", prop);
+
+
+        // increase time to pass voting period
+        tube.wait_seconds(1)?;
+
         let mut app_binding = tube.app.borrow_mut();
         let gov = Gov::new(&mut *app_binding);
-
-        let mut sender_binding = tube.sender.borrow_mut();
-        let submit = gov.submit_executable_proposal("/cosmos.distribution.v1beta1.CommunityPoolSpendProposal".to_string(), CommunityPoolSpendProposal {
-            title: "aoeu".to_string(),
-            description: "aoeu".to_string(),
-            recipient: sender.to_string(),
-            amount: vec![],
-        },
-                                       vec![],
-                                       sender.to_string(),
-                                       &mut *sender_binding,
-        );
 
         let query = gov.query_proposal(&QueryProposalRequest{
             proposal_id: 1,
         })?;
 
-        println!("query: {:?}", query);
-
-        submit
+        prop
     };
 
     let proposal_id = assert_that!(proposal).is_ok().subject.data.proposal_id;
@@ -364,6 +393,7 @@ fn post_bribe() -> anyhow::Result<()> {
 
     assert_that!(authz_res).is_ok();
 
+    // TODO: 1: inactive proposal... why does it say inactive?
     let vote_res = voter_card.cast_vote(proposal_id, VoteOption::Yes);
     assert_that!(vote_res).is_ok();
 

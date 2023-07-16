@@ -48,7 +48,7 @@ fn bribe(deps: DepsMut, env: Env, info: MessageInfo, app: GiftcardIssuerApp, par
 }
 
 /// Issue a new right to vote
-/// The authz rights are assumed to have been given alreayd (and cannot be checked here)
+/// The authz rights are assumed to have been given already (and cannot be checked here)
 pub fn issue_bribe(
     deps: DepsMut,
     _env: Env,
@@ -87,23 +87,3 @@ pub fn issue_bribe(
     // store amount for reply
     Ok(app.custom_tag_response(Response::new().add_submessage(msg), "issue", vec![("collateral", collateral.to_string())]))
 }
-
-// fn spend(deps: DepsMut, env: Env, info: MessageInfo, app: GiftcardIssuerApp, amount: Coin, recipient: String) -> AppResult {
-//     // spend from the account
-//     let cfg = CONFIG.load(deps.storage)?;
-//     let sender = info.sender;
-//     ensure!(RIGHTS_MARKET.has(deps.storage, &sender), AppError::OnlySpendViaAuthz(sender));
-//
-//     let value = app.bank(deps.as_ref()).balance(&cfg.issue_asset)?;
-//
-//     ensure!(value.amount >= amount.amount, AppError::InsufficientFunds {
-//         balance: value,
-//         required: amount,
-//     });
-//     let deposited = deps.querier.query_balance(app.proxy_address(deps.as_ref())?, "uosmo")?;
-//
-//     let withdrawal = app.bank(deps.as_ref()).transfer(vec![amount.clone()], &deps.api.addr_validate(&recipient)?)?;
-//     let withdrawal = app.executor(deps.as_ref()).execute(vec![withdrawal])?;
-//
-//     Ok(app.custom_tag_response(Response::new().add_message(withdrawal), "spend", vec![("amount", amount.to_string())]))
-// }

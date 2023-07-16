@@ -29,9 +29,10 @@ cw2 = "1.0.1"
 osmosis-std = "0.16.0"
 serde = { version = "1.0.167", default-features = false, features = ["derive"] }
 
+#cw-orch = { path = "../../Abstract/cw-orchestrator/cw-orch" }
 cw-orch = { version = "0.13" }
 cw-multi-test = { version = "0.16.5" }
 
 [patch.crates-io]
-# Update deps to ~0.13.1 after when its released
+#cw-orch = { path = "../../Abstract/cw-orchestrator" }
 cw-orch = { git = "https://github.com/AbstractSDK/cw-orchestrator" }
