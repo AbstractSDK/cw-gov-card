@@ -9,9 +9,6 @@ abstract_app::app_msg_types!(GiftcardIssuerApp, AppExecuteMsg, AppQueryMsg);
 /// PaymentApp instantiate message
 #[cosmwasm_schema::cw_serde]
 pub struct AppInstantiateMsg {
-    // denom of the cards it issues
-    // (We could allow multiple denoms in the future if desired, but this is simpler for now)
-    pub issue_asset: AssetEntry,
     // module id of giftcard contract
     pub giftcard_module_id: u64,
     // pub giftcard_module_id: String,
@@ -22,17 +19,21 @@ pub struct AppInstantiateMsg {
 #[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
 #[cfg_attr(feature = "interface", impl_into(ExecuteMsg))]
 pub enum AppExecuteMsg {
-    // Issue a new card
+    // Issue a new card, collateral is sent funds
     #[cfg_attr(feature = "interface", payable)]
     Issue {
+        // collateral to be returned when rights are sold
+        collateral: Coin,
+        // price of the rights listed
+        price: Coin,
+        // optional label for the card
         label: Option<String>,
     },
-
-    // Spend from a card
-    Spend {
-        amount: Coin,
-        recipient: String,
-    },
+    #[cfg_attr(feature = "interface", payable)]
+    Bribe {
+        // the party whose rights are being sold
+        party: String,
+    }
 }
 
 #[cosmwasm_schema::cw_serde]
@@ -49,10 +50,6 @@ pub enum AppMigrateMsg {}
 
 #[cosmwasm_schema::cw_serde]
 pub struct ConfigResponse {
-    // Ans asset that's used to issue cards
-    pub issue_asset: AssetEntry,
-    // denom of the cards it issues
-    pub issue_denom: String,
     // code id of giftcard contract
     pub giftcard_id: u64,
 }
@@ -60,6 +57,5 @@ pub struct ConfigResponse {
 // TODO: shared api package, don't copy
 #[cosmwasm_schema::cw_serde]
 pub struct GiftCardInstantiateMsg {
-    pub owner: String,
-    pub allowance: Coin,
+    pub party: String,
 }

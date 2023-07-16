@@ -1,6 +1,6 @@
 [package]
-name = "cw-giftcard"
-description = "Giftcard NFT"
+name = "cw-gov-card"
+description = "Governance rigths card NFT"
 version = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
@@ -28,7 +28,8 @@ schemars = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 cw-orch = { workspace = true, optional = true }
-abstract-giftcard-issuer = { path = "../cw-card-issuer", default-features = false }
+cw-asset.workspace = true
+#abstract-giftcard-issuer = { path = "../cw-card-issuer", default-features = false }
 
 [dev-dependencies]
 cw-multi-test = { workspace = true }

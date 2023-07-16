@@ -23,7 +23,7 @@ use abstract_giftcard_issuer::{
     msg::{AppInstantiateMsg, ConfigResponse, InstantiateMsg},
     GiftcardIssuer, *,
 };
-use cw_giftcard::{CwGiftcard, CwGiftcardExecuteFns};
+use cw_gov_card::{CwGovCard, CwGiftcardExecuteFns};
 
 // consts for testing
 const ADMIN: &str = "admin";
@@ -57,7 +57,7 @@ fn setup() -> anyhow::Result<(
     AbstractAccount<OsmosisTestTube>,
     Abstract<OsmosisTestTube>,
     GiftcardIssuer<OsmosisTestTube>,
-    CwGiftcard<OsmosisTestTube>,
+    CwGovCard<OsmosisTestTube>,
 )> {
     // Download the adapter wasm
     // Create the OsmosisTestTube
@@ -76,8 +76,8 @@ fn setup() -> anyhow::Result<(
 }
 
 // Uploads and returns the giftcard contract
-fn setup_giftcard(OsmosisTestTube: &OsmosisTestTube) -> CwGiftcard<OsmosisTestTube> {
-    let giftcard = cw_giftcard::CwGiftcard::new("giftcard", OsmosisTestTube.clone());
+fn setup_giftcard(OsmosisTestTube: &OsmosisTestTube) -> CwGovCard<OsmosisTestTube> {
+    let giftcard = cw_gov_card::CwGovCard::new("giftcard", OsmosisTestTube.clone());
     giftcard.upload().unwrap();
 
     giftcard
@@ -168,7 +168,7 @@ fn install_modules_on_account(
     abstr: &Abstract<OsmosisTestTube>,
     account: &AbstractAccount<OsmosisTestTube>,
     issuer: &GiftcardIssuer<OsmosisTestTube>,
-    giftcard: CwGiftcard<OsmosisTestTube>,
+    giftcard: CwGovCard<OsmosisTestTube>,
 ) -> anyhow::Result<()> {
     install_dex_on_account(account)?;
     install_giftcard_issuer_on_account(
@@ -176,7 +176,6 @@ fn install_modules_on_account(
         account,
         issuer,
         AppInstantiateMsg {
-            issue_asset: AssetEntry::from(ISSUE_ASSET),
             giftcard_module_id: giftcard.code_id()?,
             // giftcard_module_id: "abstract:giftcard".to_string(),
         },
@@ -224,15 +223,13 @@ fn successful_install() -> anyhow::Result<()> {
     assert_eq!(
         config,
         ConfigResponse {
-            issue_asset: AssetEntry::from(ISSUE_ASSET),
-            issue_denom: ISSUE_DENOM.to_string(),
             giftcard_id: giftcard.code_id()?,
         }
     );
     Ok(())
 }
 
-#[test]
+/*#[test]
 fn asset_not_found() -> anyhow::Result<()> {
     // Set up the environment and contract
     let (_account, _abstr, gc_issuer, _giftcard) = setup()?;
@@ -244,49 +241,49 @@ fn asset_not_found() -> anyhow::Result<()> {
         &account,
         &gc_issuer,
         AppInstantiateMsg {
-            issue_asset: AssetEntry::from("not_found"),
             giftcard_module_id: gc_issuer.code_id()?,
         },
     );
 
     assert_that!(install_res).is_err();
     Ok(())
-}
+}*/
 
 #[test]
-fn pay_for_gc() -> anyhow::Result<()> {
+fn post_bribe() -> anyhow::Result<()> {
     // Set up the environment and contract
     let (account, _abstr, gc_issuer, giftcard) = setup()?;
     let sender = gc_issuer.get_chain().sender();
     println!("sender: {:?}", sender);
 
-    // setup the buyer TODO: this is buggy
-    // let buyer = gc_issuer.get_chain().clone().init_account(coins(10_000u128, ISSUE_DENOM))?;
-    //     // let balance: Uint128 = gc_issuer.get_chain().clone().query_balance(&buyer.borrow().address(), ISSUE_DENOM).unwrap();
-    //     // assert_eq!(balance.u128(), 10_000u128);
-
     // let issue_res = gc_issuer.call_as(&buyer).issue(None, &coins(500u128, ISSUE_DENOM));
-    let deposit_amount = 500u128;
-    let issue_res = gc_issuer.issue(None, &coins(deposit_amount, ISSUE_DENOM));
+    let collateral = coin(500u128, ISSUE_DENOM);
+    let price = coin(1000u128, ISSUE_DENOM);
+
+    let issue_res = gc_issuer.issue(collateral.clone(), price.clone(), None, &[collateral.clone()]);
 
     let issue_res = assert_that!(issue_res).is_ok().subject.to_owned();
     println!("{:?}", issue_res);
 
-    let giftcard_addr = issue_res.event_attr_value(ABSTRACT_EVENT_TYPE, "gift_card")?;
+    let voter_card_addr = issue_res.event_attr_value(ABSTRACT_EVENT_TYPE, "voter_card")?;
 
-    let mut giftcard = CwGiftcard::new("cw-giftcard", gc_issuer.get_chain().clone());
-    giftcard.set_address(&Addr::unchecked(giftcard_addr.clone()));
-    println!("giftcard: {:?}", giftcard_addr);
-    // check that the giftcard has no balance
-    assert_that!(gc_issuer.get_chain().clone().query_balance(&giftcard_addr, ISSUE_DENOM)).is_ok().is_equal_to(Uint128::from(0u128));
+    let mut voter_card = CwGovCard::new("cw-gov-card", gc_issuer.get_chain().clone());
+    voter_card.set_address(&Addr::unchecked(voter_card_addr.clone()));
+    println!("voter_card_addr: {:?}", voter_card_addr);
+    let voter_card_config = cw_gov_card::types::QueryMsgFns::config(&voter_card)?;
+    // check that the voter card is owned by the issuer
+    assert_that!(voter_card_config.owner).is_equal_to(gc_issuer.address()?.to_string());
 
+    // check that the voter card has the collateral
+    assert_that!(gc_issuer.get_chain().clone().query_balance(&voter_card_addr, ISSUE_DENOM)).is_ok().is_equal_to(collateral.amount);
 
-    let withdrawal_amount = 100u128;
-    let redemption_res = giftcard.redeem(coin(withdrawal_amount, ISSUE_DENOM), gc_issuer.get_chain().sender.borrow().address());
+    // buy our own bribe (should be another buyer, but bug prevents)
+    let bribe_res = gc_issuer.bribe(sender.to_string(), &[price]);
+    assert_that!(bribe_res).is_ok();
 
-    assert_that!(redemption_res).is_ok();
-    assert_that!(gc_issuer.get_chain().clone().query_balance(&account.proxy.address()?.as_str(), ISSUE_DENOM)).is_ok().is_equal_to(Uint128::from(deposit_amount - withdrawal_amount));
-
+    let voter_card_config = cw_gov_card::types::QueryMsgFns::config(&voter_card)?;
+    // check that the voter card is owned by the briber
+    assert_that!(voter_card_config.owner).is_equal_to(sender.to_string());
 
     Ok(())
 }

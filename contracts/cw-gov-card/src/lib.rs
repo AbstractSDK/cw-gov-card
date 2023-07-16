@@ -3,7 +3,7 @@ pub mod contract;
 pub mod types;
 
 #[cfg(feature = "interface")]
-pub use crate::contract::CwGiftcard;
+pub use crate::contract::CwGovCard;
 // in lib.rs
 #[cfg(feature = "interface")]
 pub use crate::types::{ExecuteMsgFns as CwGiftcardExecuteFns, QueryMsgFns as CwGiftcardQueryFns};

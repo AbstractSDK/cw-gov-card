@@ -50,7 +50,7 @@ cw-paginate = "0.2.1"
 cw-asset.workspace = true
 cw-controllers.workspace = true
 cw-item-set = "0.7.1"
-
+cw-gov-card = { path = "../cw-gov-card", default-features = false }
 
 [dev-dependencies]
 abstract-interface = { version = "0.17.0", features = ["daemon"] }
@@ -65,4 +65,5 @@ cw-orch = { workspace = true, features = ["daemon", "osmosis-test-tube"] }
 abstract-dex-adapter = { git = "https://github.com/AbstractSDK/abstract.git", tag = "v0.17.0", features = [
   "interface",
 ] }
-cw-giftcard = { path = "../cw-giftcard", features = ["interface"] }
+cw-gov-card = { path = "../cw-gov-card", features = ["interface"] }
+osmosis-test-tube = { version = "16.0" }

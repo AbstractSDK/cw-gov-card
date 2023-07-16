@@ -1,2 +1,2 @@
 6e74f4f4c28c5ea53814d3c01270cef64d42c957db4473102bd91fb54494e989  ./target/wasm32-unknown-unknown/release/abstract_giftcard_issuer.wasm
-3f2df7be621798ab755090f7af4f40ec0b01ec4b2b1a2fb6d23e1d73c487af70  ./target/wasm32-unknown-unknown/release/cw_giftcard.wasm
+3f2df7be621798ab755090f7af4f40ec0b01ec4b2b1a2fb6d23e1d73c487af70  ./target/wasm32-unknown-unknown/release/cw_gov_card.wasm

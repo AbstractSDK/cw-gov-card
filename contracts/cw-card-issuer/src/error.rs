@@ -1,8 +1,8 @@
 use abstract_app::AppError as AbstractAppError;
 use abstract_core::AbstractError;
 use abstract_sdk::AbstractSdkError;
-use cosmwasm_std::{Coin, StdError};
-use cw_asset::Asset;
+use cosmwasm_std::{Coin, StdError, Uint128};
+use cw_asset::{Asset, AssetError};
 use cw_utils::{ParseReplyError, PaymentError};
 use thiserror::Error;
 
@@ -17,8 +17,8 @@ pub enum AppError {
     #[error("{0}")]
     AbstractSdk(#[from] AbstractSdkError),
 
-    // #[error("{0}")]
-    // Asset(#[from] AssetError),
+    #[error("{0}")]
+    Asset(#[from] AssetError),
 
     #[error("{0}")]
     Admin(#[from] cw_controllers::AdminError),
@@ -41,9 +41,15 @@ pub enum AppError {
     #[error("Only spend via authz is supported. Sender: {0}")]
     OnlySpendViaAuthz(String),
 
-    #[error("Insufficient funds. Balance: {balance:?}, required: {required:?}")]
+    #[error("Insufficient funds. PRovided: {provided:?}, required: {required:?}")]
     InsufficientFunds {
-        balance: Asset,
-        required: Coin,
+        provided: Uint128,
+        required: Uint128,
     },
+
+    #[error("Already issued to {0}")]
+    AlreadyIssued(String),
+
+    #[error("Not issued to {0}")]
+    NotIssued(String),
 }

@@ -20,8 +20,6 @@ fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     let cfg = CONFIG.load(deps.storage)?;
 
     let cfg = ConfigResponse {
-        issue_denom: cfg.issue_denom,
-        issue_asset: cfg.issue_asset,
         giftcard_id: cfg.giftcard_id,
     };
     Ok(cfg)
