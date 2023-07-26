@@ -303,21 +303,29 @@ fn post_bribe() -> anyhow::Result<()> {
             let gov = Gov::new(&mut *app_binding);
 
             let mut sender_binding = tube.sender.borrow_mut();
+
+            let deposit_params = gov.query_params(&QueryParamsRequest {
+                params_type: "deposit".to_string(),
+            })?;
+
+            let min_deposit = deposit_params
+                .deposit_params
+                .expect("deposit params must exist")
+                .min_deposit;
+
+            println!("min_deposit {:?}", min_deposit);
+
             let proposal_submission = gov.submit_executable_proposal("/cosmos.distribution.v1beta1.CommunityPoolSpendProposal".to_string(), CommunityPoolSpendProposal {
                 title: "aoeu".to_string(),
                 description: "aoeu".to_string(),
                 recipient: sender.to_string(),
-                amount: vec![base::v1beta1::Coin {
-                    denom: "uosmo".to_string(),
-                    amount: 1000000.to_string(),
-                }],
+                amount: vec![]
             },
-             vec![],
-                                                                     proposer.address(),
-                                                                     &proposer,
+coins(10_000_000, ISSUE_DENOM)
+             ,
+               proposer.address(),
+               &proposer,
             );
-
-
 
             // query params
             let params = gov.query_params(&QueryParamsRequest {
@@ -336,16 +344,18 @@ fn post_bribe() -> anyhow::Result<()> {
 
         println!("prop_submission: {:?}", prop);
 
+        // Increase time to enter the voting period
+        tube.app.borrow().increase_time( 1);
 
-        // increase time to pass voting period
-        tube.wait_seconds(1)?;
 
         let mut app_binding = tube.app.borrow_mut();
         let gov = Gov::new(&mut *app_binding);
 
-        let query = gov.query_proposal(&QueryProposalRequest{
+        let prop_query = gov.query_proposal(&QueryProposalRequest{
             proposal_id: 1,
         })?;
+
+        println!("prop_query: {:?}", prop_query);
 
         prop
     };
