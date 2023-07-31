@@ -28,7 +28,7 @@ interface = ["export", "dep:abstract-interface", "dep:cw-orch"]
 schema = ["abstract-app/schema"]
 
 [dependencies]
-abstract-sdk = { version = "0.17.0" }
+abstract-sdk = { version = "0.18.0" }
 abstract-app = { version = "0.17.0" }
 abstract-core = { version = "0.17.0" }
 abstract-dex-adapter = { git = "https://github.com/AbstractSDK/abstract.git", tag = "v0.17.0", default-features = false }
@@ -55,7 +55,7 @@ cw-gov-card = { path = "../cw-gov-card", default-features = false }
 [dev-dependencies]
 abstract-interface = { version = "0.17.0", features = ["daemon"] }
 abstract-testing = { version = "0.17.0" }
-abstract-sdk = { version = "0.17.0", features = ["test-utils"] }
+abstract-sdk = { version = "0.18.0", features = ["test-utils"] }
 speculoos = "0.11.0"
 semver = "1.0"
 dotenv = "0.15.0"
