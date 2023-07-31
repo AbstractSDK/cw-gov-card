@@ -30,7 +30,7 @@ schema = ["abstract-app/schema"]
 [dependencies]
 abstract-sdk = { version = "0.17.0" }
 abstract-app = { version = "0.17.0" }
-abstract-core = { version = "0.17.0" }
+abstract-core = { version = "0.18.0" }
 abstract-dex-adapter = { git = "https://github.com/AbstractSDK/abstract.git", tag = "v0.17.0", default-features = false }
 cosmwasm-std = { workspace = true }
 cosmwasm-schema = { workspace = true }
