@@ -304,7 +304,7 @@ fn post_bribe() -> anyhow::Result<()> {
 
             let mut sender_binding = tube.sender.borrow_mut();
 
-            let deposit_params = gov.query_params(&QueryParamsRequest {
+            let deposit_params = gov.query_params(&osmosis_std::types::cosmos::gov::v1beta1::QueryParamsRequest {
                 params_type: "deposit".to_string(),
             })?;
 
@@ -324,11 +324,12 @@ fn post_bribe() -> anyhow::Result<()> {
 coins(10_000_000, ISSUE_DENOM)
              ,
                proposer.address(),
+               false,
                &proposer,
             );
 
             // query params
-            let params = gov.query_params(&QueryParamsRequest {
+            let params = gov.query_params(&osmosis_std::types::cosmos::gov::v1beta1::QueryParamsRequest {
                 params_type: "voting".to_string(),
             })?;
 
@@ -351,7 +352,7 @@ coins(10_000_000, ISSUE_DENOM)
         let mut app_binding = tube.app.borrow_mut();
         let gov = Gov::new(&mut *app_binding);
 
-        let prop_query = gov.query_proposal(&QueryProposalRequest{
+        let prop_query = gov.query_proposal(&osmosis_std::types::cosmos::gov::v1beta1::QueryProposalRequest{
             proposal_id: 1,
         })?;
 

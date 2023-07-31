@@ -125,6 +125,7 @@ pub fn cast_vote(
     let mut cfg = CONFIG.load(deps.storage)?;
     ensure_eq!(info.sender, cfg.owner, ContractError::NotOwner);
 
+    // TODO: this does not work because the query is not allowlisted on-chain
     // let prop = query_proposal(&deps.querier, proposal_id)?;
     //
     // ensure_eq!(prop.status, ProposalStatus::VotingPeriod as i32, ContractError::NotVotingPeriod(proposal_id));
