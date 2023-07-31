@@ -44,7 +44,7 @@ thiserror = { workspace = true }
 cosmos-sdk-proto = { version = "0.19.0", default-features = false, features=["cosmwasm"] }
 
 # Dependencies for interface
-abstract-interface = { version = "0.17.0", optional = true }
+abstract-interface = { version = "0.18.0", optional = true }
 cw-orch = { workspace = true, optional = true }
 cw-paginate = "0.2.1"
 cw-asset.workspace = true
@@ -53,7 +53,7 @@ cw-item-set = "0.7.1"
 cw-gov-card = { path = "../cw-gov-card", default-features = false }
 
 [dev-dependencies]
-abstract-interface = { version = "0.17.0", features = ["daemon"] }
+abstract-interface = { version = "0.18.0", features = ["daemon"] }
 abstract-testing = { version = "0.17.0" }
 abstract-sdk = { version = "0.17.0", features = ["test-utils"] }
 speculoos = "0.11.0"
